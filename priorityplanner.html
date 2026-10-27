@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Priority Planner — Penentu Skala Prioritas</title>
+<style>
+  /* ========== RESET & VARIABEL ========== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --biru-tua: #0f2a4a;
+    --biru-tua-2: #153a63;
+    --biru-muda: #4da3ff;
+    --biru-muda-2: #7cc0ff;
+    --putih: #ffffff;
+    --abu-bg: #f4f7fb;
+    --abu-teks: #5b6b7f;
+    --abu-garis: #e2e8f0;
+    --hijau: #16a34a;
+    --merah: #dc2626;
+    --kuning: #d97706;
+    --radius: 16px;
+    --shadow: 0 6px 24px rgba(15, 42, 74, 0.08);
+    --shadow-lg: 0 12px 40px rgba(15, 42, 74, 0.16);
+    --font: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+    --sidebar-w: 260px;
+  }
+  body {
+    font-family: var(--font);
+    background: var(--abu-bg);
+    color: var(--biru-tua);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ========== LAYOUT DASHBOARD ========== */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* SIDEBAR (desktop) */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: linear-gradient(180deg, var(--biru-tua) 0%, var(--biru-tua-2) 100%);
+    color: var(--putih);
+    padding: 24px 18px;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+    transition: transform .3s ease;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 8px 20px;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    margin-bottom: 12px;
+  }
+  .brand-logo {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--biru-muda), #2f7fd6);
+    display: grid; place-items: center;
+    font-size: 20px; font-weight: 800; color: var(--putih);
+    box-shadow: 0 4px 14px rgba(77,163,255,.4);
+  }
+  .brand-text h1 { font-size: 17px; font-weight: 700; letter-spacing: .2px; }
+  .brand-text p { font-size: 11px; opacity: .7; }
+
+  .nav-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    opacity: .55; padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border-radius: 10px;
+    color: rgba(255,255,255,.85);
+    cursor: pointer; font-size: 14px; font-weight: 500;
+    border: none; background: transparent; width: 100%; text-align: left;
+    transition: background .2s, color .2s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.09); color: #fff; }
+  .nav-item.active {
+    background: linear-gradient(90deg, rgba(77,163,255,.35), rgba(77,163,255,.12));
+    color: #fff;
+    box-shadow: inset 3px 0 0 var(--biru-muda);
+  }
+  .nav-item .ico { font-size: 17px; width: 22px; text-align: center; }
+
+  .sidebar-footer { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid rgba(255,255,255,.12); }
+  .btn-danger-outline {
+    width: 100%; padding: 10px; border-radius: 10px; cursor: pointer;
+    background: transparent; color: #ffb4b4; border: 1px solid rgba(255,120,120,.35);
+    font-size: 13px; font-weight: 600; transition: .2s;
+  }
+  .btn-danger-outline:hover { background: rgba(220,38,38,.25); color: #fff; }
+
+  /* MAIN */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    padding: 26px 32px 60px;
+    min-width: 0;
+  }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .topbar h2 { font-size: 22px; font-weight: 700; }
+  .topbar .sub { font-size: 13px; color: var(--abu-teks); margin-top: 2px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 18px; border-radius: 12px; border: none;
+    font-family: var(--font); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: transform .15s, box-shadow .2s, background .2s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--biru-muda), #2f7fd6);
+    color: #fff; box-shadow: 0 6px 18px rgba(77,163,255,.35);
+  }
+  .btn-primary:hover { box-shadow: 0 8px 24px rgba(77,163,255,.5); }
+  .btn-ghost {
+    background: var(--putih); color: var(--biru-tua);
+    border: 1px solid var(--abu-garis); box-shadow: var(--shadow);
+  }
+  .btn-ghost:hover { background: #f0f5fb; }
+
+  /* ========== KARTU STATISTIK ========== */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px; margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--putih); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow);
+    border: 1px solid var(--abu-garis);
+    display: flex; flex-direction: column; gap: 4px;
+    transition: transform .2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-card .label { font-size: 12px; color: var(--abu-teks); font-weight: 600; }
+  .stat-card .value { font-size: 26px; font-weight: 800; color: var(--biru-tua); }
+  .stat-card .value.blue { color: #1d6fd6; }
+  .stat-card .value.green { color: var(--hijau); }
+  .stat-card .value.red { color: var(--merah); }
+  .stat-card .icon { font-size: 20px; }
+
+  /* Progress bar */
+  .progress-wrap { background: var(--putih); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); border: 1px solid var(--abu-garis); margin-bottom: 22px; }
+  .progress-head { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .progress-track { height: 12px; background: #e8eef6; border-radius: 99px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--biru-muda), #2f7fd6);
+    border-radius: 99px; transition: width .6s cubic-bezier(.22,1,.36,1);
+  }
+
+  /* ========== PANEL SECTION ========== */
+  .panel {
+    background: var(--putih); border-radius: var(--radius);
+    box-shadow: var(--shadow); border: 1px solid var(--abu-garis);
+    padding: 20px; margin-bottom: 22px;
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .panel-head h3 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .badge-count { font-size: 11px; background: #eaf2ff; color: #1d6fd6; padding: 3px 9px; border-radius: 99px; font-weight: 700; }
+
+  /* Highlight cards */
+  .highlight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .highlight-card {
+    border-radius: 14px; padding: 16px; border: 1px solid var(--abu-garis);
+    background: linear-gradient(160deg, #f7fbff, #eef5ff);
+  }
+  .highlight-card h4 { font-size: 13px; color: var(--abu-teks); font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .mini-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px dashed #dbe6f2; }
+  .mini-item:last-child { border-bottom: none; }
+  .mini-item .name { font-size: 13px; font-weight: 600; }
+  .mini-item .meta { font-size: 11px; color: var(--abu-teks); }
+  .mini-empty { font-size: 12px; color: #9aa8b8; font-style: italic; }
+
+  /* ========== TOOLBAR (search/filter) ========== */
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .toolbar input, .toolbar select {
+    font-family: var(--font); font-size: 13px;
+    padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--abu-garis); background: var(--putih);
+    color: var(--biru-tua); outline: none; transition: border .2s, box-shadow .2s;
+  }
+  .toolbar input:focus, .toolbar select:focus {
+    border-color: var(--biru-muda); box-shadow: 0 0 0 3px rgba(77,163,255,.15);
+  }
+  .toolbar .search { flex: 1; min-width: 180px; }
+  .toolbar select { cursor: pointer; }
+
+  /* ========== DAFTAR KEGIATAN ========== */
+  .task-list { display: flex; flex-direction: column; gap: 12px; }
+  .task-card {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--putih); border: 1px solid var(--abu-garis);
+    border-radius: 14px; padding: 16px;
+    box-shadow: 0 2px 10px rgba(15,42,74,.04);
+    transition: transform .2s, box-shadow .2s, opacity .3s;
+    animation: slideIn .35s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .task-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .task-card.done { opacity: .68; }
+  .task-card.done .task-name { text-decoration: line-through; color: #8a99a8; }
+
+  .task-check {
+    width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0;
+    border: 2px solid #c7d5e5; background: #fff; cursor: pointer;
+    display: grid; place-items: center; margin-top: 2px;
+    transition: .2s;
+  }
+  .task-check:hover { border-color: var(--biru-muda); }
+  .task-check.checked { background: var(--hijau); border-color: var(--hijau); }
+  .task-check.checked::after { content: "✓"; color: #fff; font-size: 14px; font-weight: 800; }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-name { font-size: 15px; font-weight: 700; color: var(--biru-tua); word-break: break-word; }
+  .task-desc { font-size: 12px; color: var(--abu-teks); margin-top: 2px; word-break: break-word; }
+
+  .task-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 9px; font-size: 11px; color: var(--abu-teks); }
+  .task-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 700; padding: 3px 9px;
+    border-radius: 99px; text-transform: uppercase; letter-spacing: .3px;
+  }
+  .tag-tinggi { background: #fdeaea; color: #b91c1c; }
+  .tag-sedang { background: #fef3e2; color: #b45309; }
+  .tag-rendah { background: #e7f7ee; color: #15803d; }
+  .tag-kategori { background: #eaf2ff; color: #1d6fd6; }
+  .tag-late { background: #dc2626; color: #fff; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .65; } }
+
+  .score-box {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-width: 64px; padding: 6px 10px; border-radius: 12px;
+    background: linear-gradient(160deg, #eef5ff, #e2eeff);
+    border: 1px solid #d3e4fb;
+  }
+  .score-box .num { font-size: 20px; font-weight: 800; color: #1d6fd6; line-height: 1; }
+  .score-box .lbl { font-size: 9px; color: var(--abu-teks); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+  .task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 9px; cursor: pointer;
+    border: 1px solid var(--abu-garis); background: #fff;
+    display: grid; place-items: center; font-size: 14px;
+    transition: .2s;
+  }
+  .icon-btn:hover { background: #f0f5fb; border-color: var(--biru-muda-2); }
+  .icon-btn.del:hover { background: #fdeaea; border-color: #f3b4b4; }
+
+  /* Empty state */
+  .empty {
+    text-align: center; padding: 44px 20px; color: var(--abu-teks);
+  }
+  .empty .emoji { font-size: 52px; display: block; margin-bottom: 12px; opacity: .85; }
+  .empty h4 { font-size: 16px; color: var(--biru-tua); margin-bottom: 6px; }
+  .empty p { font-size: 13px; max-width: 360px; margin: 0 auto 16px; }
+
+  /* ========== MODAL / FORM ========== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,42,74,.55);
+    backdrop-filter: blur(3px); display: none;
+    align-items: center; justify-content: center; z-index: 500; padding: 20px;
+    animation: fadeIn .2s ease;
+  }
+  .modal-overlay.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--putih); border-radius: 20px; width: 100%; max-width: 560px;
+    max-height: 90vh; overflow-y: auto; padding: 24px;
+    box-shadow: var(--shadow-lg);
+    animation: popIn .28s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes popIn { from { opacity: 0; transform: scale(.94) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal h3 { font-size: 18px; margin-bottom: 4px; }
+  .modal .modal-sub { font-size: 12px; color: var(--abu-teks); margin-bottom: 18px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 12px; font-weight: 600; color: var(--biru-tua); }
+  .field label .req { color: var(--merah); }
+  .field input, .field select, .field textarea {
+    font-family: var(--font); font-size: 13px;
+    padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--abu-garis); background: #fbfdff;
+    color: var(--biru-tua); outline: none; transition: .2s;
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--biru-muda); box-shadow: 0 0 0 3px rgba(77,163,255,.15); background: #fff;
+  }
+  .field .err { font-size: 11px; color: var(--merah); min-height: 14px; }
+
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+  /* ========== TOAST ========== */
+  #toast-container {
+    position: fixed; top: 20px; right: 20px; z-index: 999;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .toast {
+    background: var(--biru-tua); color: #fff;
+    padding: 12px 18px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 9px;
+    animation: toastIn .3s cubic-bezier(.22,1,.36,1);
+    max-width: 320px;
+  }
+  .toast.success { background: linear-gradient(135deg, #15803d, #16a34a); }
+  .toast.error { background: linear-gradient(135deg, #b91c1c, #dc2626); }
+  .toast.info { background: linear-gradient(135deg, #1d6fd6, #4da3ff); }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+  .toast.out { animation: toastOut .3s forwards; }
+  @keyframes toastOut { to { opacity: 0; transform: translateX(30px); } }
+
+  /* ========== MOBILE NAV ========== */
+  .mobile-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--putih); border-top: 1px solid var(--abu-garis);
+    z-index: 100; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 20px rgba(15,42,74,.08);
+  }
+  .mobile-nav-inner { display: flex; justify-content: space-around; }
+  .mnav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 7px 4px; border: none; background: transparent; cursor: pointer;
+    font-family: var(--font); font-size: 10px; font-weight: 600;
+    color: var(--abu-teks); border-radius: 10px; transition: .2s;
+  }
+  .mnav-item .ico { font-size: 18px; }
+  .mnav-item.active { color: #1d6fd6; background: #eaf2ff; }
+
+  .hamburger {
+    display: none; width: 42px; height: 42px; border-radius: 11px;
+    border: 1px solid var(--abu-garis); background: #fff; cursor: pointer;
+    font-size: 20px; color: var(--biru-tua); box-shadow: var(--shadow);
+  }
+
+  /* ========== RESPONSIF ========== */
+  @media (max-width: 1024px) {
+    :root { --sidebar-w: 220px; }
+    .main { padding: 22px 22px 90px; }
+  }
+  @media (max-width: 820px) {
+    .sidebar { transform: translateX(-100%); width: 280px; }
+    .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
+    .main { margin-left: 0; padding: 18px 16px 100px; }
+    .hamburger { display: grid; place-items: center; }
+    .mobile-nav { display: block; }
+    .form-grid { grid-template-columns: 1fr; }
+    .topbar h2 { font-size: 19px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .stat-card .value { font-size: 22px; }
+    .task-card { flex-wrap: wrap; }
+    .task-actions { width: 100%; justify-content: flex-end; }
+    .score-box { min-width: 54px; }
+  }
+  /* Overlay gelap untuk sidebar mobile */
+  .sidebar-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(15,42,74,.5);
+    z-index: 99;
+  }
+  .sidebar-backdrop.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div class="brand-text">
+        <h1>Priority Planner</h1>
+        <p>Penentu Skala Prioritas</p>
+      </div>
+    </div>
+
+    <div class="nav-label">Menu</div>
+    <button class="nav-item active" data-view="dashboard">
+      <span class="ico">📊</span> Dashboard
+    </button>
+    <button class="nav-item" data-view="tasks">
+      <span class="ico">📋</span> Semua Kegiatan
+    </button>
+    <button class="nav-item" data-view="agenda">
+      <span class="ico">📅</span> Agenda
+    </button>
+
+    <div class="nav-label">Aksi</div>
+    <button class="nav-item" id="btnSidebarAdd">
+      <span class="ico">➕</span> Tambah Kegiatan
+    </button>
+
+    <div class="sidebar-footer">
+      <button class="btn-danger-outline" id="btnHapusSemua">🗑️ Hapus Semua Data</button>
+    </div>
+  </aside>
+
+  <!-- Backdrop mobile -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ========== MAIN ========== -->
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger" id="hamburger">☰</button>
+        <div>
+          <h2 id="pageTitle">Dashboard Prioritas</h2>
+          <p class="sub" id="pageSub">Tentukan kegiatan terpenting hari ini.</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btnAddTop">➕ Tambah Kegiatan</button>
+    </div>
+
+    <!-- ===== VIEW: DASHBOARD ===== -->
+    <section id="view-dashboard">
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <!-- Progress -->
+      <div class="progress-wrap">
+        <div class="progress-head">
+          <span>📈 Progres Penyelesaian</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <!-- Prioritas Utama Hari Ini -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>⭐ Prioritas Utama Hari Ini</h3>
+          <span class="badge-count" id="todayCount">0 kegiatan</span>
+        </div>
+        <div class="highlight-grid" id="todayHighlight"></div>
+      </div>
+
+      <!-- Tenggat Terdekat -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>⏰ Tenggat Terdekat</h3>
+          <span class="badge-count" id="deadlineCount">0 kegiatan</span>
+        </div>
+        <div class="highlight-grid" id="deadlineHighlight"></div>
+      </div>
+
+      <!-- Daftar Prioritas -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>🏆 Daftar Kegiatan Berdasarkan Prioritas</h3>
+          <button class="btn btn-ghost" id="btnGoTasks" style="padding:8px 14px;font-size:13px;">Lihat Semua</button>
+        </div>
+        <div class="task-list" id="dashboardTaskList"></div>
+      </div>
+    </section>
+
+    <!-- ===== VIEW: TASKS ===== -->
+    <section id="view-tasks" style="display:none;">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>📋 Semua Kegiatan</h3>
+          <span class="badge-count" id="tasksCountBadge">0 kegiatan</span>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <input type="text" class="search" id="searchInput" placeholder="🔍 Cari kegiatan berdasarkan nama..." />
+          <select id="filterKategori">
+            <option value="all">Semua Kategori</option>
+            <option value="sekolah">Sekolah</option>
+            <option value="pekerjaan">Pekerjaan</option>
+            <option value="pribadi">Pribadi</option>
+                        <option value="kesehatan">Kesehatan</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+          <select id="filterStatus">
+            <option value="all">Semua Status</option>
+            <option value="active">Belum Selesai</option>
+            <option value="done">Selesai</option>
+            <option value="late">Terlambat</option>
+          </select>
+          <select id="filterPrioritas">
+            <option value="all">Semua Prioritas</option>
+            <option value="tinggi">Tinggi</option>
+            <option value="sedang">Sedang</option>
+            <option value="rendah">Rendah</option>
+          </select>
+          <select id="sortBy">
+            <option value="score">Urut: Skor Prioritas</option>
+            <option value="deadline">Urut: Tenggat Terdekat</option>
+            <option value="durasi">Urut: Estimasi Durasi</option>
+          </select>
+          <button class="btn btn-ghost" id="btnResetFilter" style="padding:10px 14px;font-size:13px;">↺ Reset</button>
+        </div>
+
+        <!-- List Active & Done -->
+        <h4 style="font-size:13px;color:var(--abu-teks);margin:18px 0 10px;text-transform:uppercase;letter-spacing:.5px;">Belum Selesai</h4>
+        <div class="task-list" id="activeTaskList"></div>
+
+        <h4 style="font-size:13px;color:var(--abu-teks);margin:22px 0 10px;text-transform:uppercase;letter-spacing:.5px;">Selesai</h4>
+        <div class="task-list" id="doneTaskList"></div>
+      </div>
+    </section>
+
+    <!-- ===== VIEW: AGENDA ===== -->
+    <section id="view-agenda" style="display:none;">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>📅 Agenda Sederhana</h3>
+          <span class="badge-count" id="agendaCount">0 item</span>
+        </div>
+        <p style="font-size:12px;color:var(--abu-teks);margin-bottom:14px;">Daftar kegiatan mendatang yang dikelompokkan per tanggal.</p>
+        <div id="agendaList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ========== MOBILE NAV ========== -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mnav-item active" data-view="dashboard"><span class="ico">📊</span>Dashboard</button>
+    <button class="mnav-item" data-view="tasks"><span class="ico">📋</span>Kegiatan</button>
+    <button class="mnav-item" id="mnavAdd"><span class="ico">➕</span>Tambah</button>
+    <button class="mnav-item" data-view="agenda"><span class="ico">📅</span>Agenda</button>
+  </div>
+</nav>
+
+<!-- ========== MODAL FORM ========== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Tambah Kegiatan Baru</h3>
+    <p class="modal-sub">Isi detail kegiatan. Skor prioritas akan dihitung otomatis.</p>
+    
+    <form id="taskForm">
+      <input type="hidden" id="taskId" />
+      
+      <div class="form-grid">
+        <div class="field full">
+          <label>Nama Kegiatan <span class="req">*</span></label>
+          <input type="text" id="inputNama" placeholder="Contoh: Mengerjakan PR Matematika" required />
+          <div class="err" id="errNama"></div>
+        </div>
+        
+        <div class="field full">
+          <label>Deskripsi (Opsional)</label>
+          <textarea id="inputDeskripsi" placeholder="Tambahkan detail kegiatan..."></textarea>
+        </div>
+
+        <div class="field">
+          <label>Tingkat Kepentingan</label>
+          <select id="inputKepentingan">
+            <option value="1">Rendah (1)</option>
+            <option value="2">Sedang (2)</option>
+            <option value="3">Tinggi (3)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Tingkat Urgensi</label>
+          <select id="inputUrgensi">
+            <option value="1">Rendah (1)</option>
+            <option value="2">Sedang (2)</option>
+            <option value="3">Tinggi (3)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Tenggat Waktu <span class="req">*</span></label>
+          <input type="datetime-local" id="inputDeadline" required />
+          <div class="err" id="errDeadline"></div>
+        </div>
+
+        <div class="field">
+          <label>Estimasi Durasi (Menit)</label>
+          <input type="number" id="inputDurasi" placeholder="Contoh: 60" min="1" value="60" />
+        </div>
+
+        <div class="field full">
+          <label>Kategori</label>
+          <select id="inputKategori">
+            <option value="sekolah">Sekolah</option>
+            <option value="pekerjaan">Pekerjaan</option>
+            <option value="pribadi">Pribadi</option>
+            <option value="kesehatan">Kesehatan</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="btnBatal">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan Kegiatan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========== TOAST CONTAINER ========== -->
+<div id="toast-container"></div>
+
+<script>
+// ==========================================
+// STATE MANAGEMENT & INISIALISASI DATA
+// ==========================================
+const STORAGE_KEY = 'priority_planner_tasks_v1';
+let tasks = [];
+let editMode = false;
+
+// Data contoh awal (hanya dimuat jika localStorage kosong)
+const SAMPLE_TASKS = [
+  {
+    id: 'sample-1',
+    nama: 'Menyelesaikan Tugas Akhir',
+    deskripsi: 'Bab 4 dan 5',
+    kepentingan: 3,
+    urgensi: 3,
+    deadline: new Date(Date.now() + 86400000 * 2).toISOString(), // 2 hari lagi
+    durasi: 180,
+    kategori: 'sekolah',
+    selesai: false,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'sample-2',
+    nama: 'Olahraga Pagi',
+    deskripsi: 'Jogging 30 menit',
+    kepentingan: 2,
+    urgensi: 1,
+    deadline: new Date(Date.now() + 86400000 * 5).toISOString(), // 5 hari lagi
+    durasi: 30,
+    kategori: 'kesehatan',
+    selesai: false,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'sample-3',
+    nama: 'Rapat Proyek Klien',
+    deskripsi: 'Persiapan presentasi',
+    kepentingan: 3,
+    urgensi: 2,
+    deadline: new Date(Date.now() + 86400000 * 1).toISOString(), // 1 hari lagi
+    durasi: 120,
+    kategori: 'pekerjaan',
+    selesai: false,
+    createdAt: new Date().toISOString()
+  }
+];
+
+// ==========================================
+// FUNGSI UTILITAS UMUM & FORMAT
+// ==========================================
+function formatDate(isoString) {
+  if (!isoString) return '-';
+  const d = new Date(isoString);
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateOnly(isoString) {
+  if (!isoString) return '-';
+  const d = new Date(isoString);
+  return d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  toast.innerHTML = `<span>${icons[type] || ''}</span> <span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('out');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+function generateId() {
+  return 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// ==========================================
+// FUNGSI ALGORITMA PRIORITAS (CORE)
+// ==========================================
+// 1. Menghitung skor dasar: (2 * Kepentingan) + Urgensi
+function hitungSkorDasar(kepentingan, urgensi) {
+  return (2 * Number(kepentingan)) + Number(urgensi);
+}
+
+// 2. Menghitung faktor tenggat waktu (dalam jam)
+function hitungFaktorTenggat(deadlineIso) {
+  if (!deadlineIso) return 0;
+  const now = new Date();
+  const deadline = new Date(deadlineIso);
+  const selisihJam = (deadline - now) / (1000 * 60 * 60);
+
+  if (selisihJam < 0) return 5;           // Terlambat
+  if (selisihJam <= 24) return 4;         // <= 1 Hari
+  if (selisihJam <= 72) return 3;         // <= 3 Hari
+  if (selisihJam <= 168) return 2;        // <= 7 Hari
+  if (selisihJam <= 336) return 1;        // <= 14 Hari
+  return 0;                               // > 14 Hari
+}
+
+// 3. Menghitung total skor
+function hitungSkorTotal(task) {
+  const skorDasar = hitungSkorDasar(task.kepentingan, task.urgensi);
+  const faktorTenggat = hitungFaktorTenggat(task.deadline);
+  return skorDasar + faktorTenggat;
+}
+
+// 4. Menentukan label prioritas berdasarkan total skor
+function getLabelPrioritas(skorTotal) {
+  if (skorTotal >= 11) return { label: 'Tinggi', class: 'tag-tinggi' };
+  if (skorTotal >= 7) return { label: 'Sedang', class: 'tag-sedang' };
+  return { label: 'Rendah', class: 'tag-rendah' };
+}
+
+// 5. Cek apakah kegiatan terlambat
+function isLate(task) {
+  if (task.selesai) return false;
+  return new Date(task.deadline) < new Date();
+}
+
+// 6. Fungsi Sorting (Pengurutan)
+// - Utama: Skor Prioritas (descending)
+// - Tie-breaker: Deadline terdekat (ascending)
+function sortTasks(taskArray, sortBy = 'score') {
+  return [...taskArray].sort((a, b) => {
+    if (sortBy === 'score') {
+      const scoreA = hitungSkorTotal(a);
+      const scoreB = hitungSkorTotal(b);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return new Date(a.deadline) - new Date(b.deadline);
+    } 
+    else if (sortBy === 'deadline') {
+      return new Date(a.deadline) - new Date(b.deadline);
+    } 
+    else if (sortBy === 'durasi') {
+      return Number(a.durasi) - Number(b.durasi);
+    }
+    return 0;
+  });
+}
+
+// ==========================================
+// FUNGSI CRUD (CREATE, READ, UPDATE, DELETE)
+// ==========================================
+function loadTasks() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      tasks = JSON.parse(data);
+    } else {
+      tasks = [...SAMPLE_TASKS];
+      saveTasks();
+    }
+  } catch (e) {
+    console.error("Gagal memuat data", e);
+    tasks = [...SAMPLE_TASKS];
+  }
+}
+
+function saveTasks() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function tambahTask(data) {
+  const newTask = {
+    id: generateId(),
+    nama: data.nama.trim(),
+    deskripsi: data.deskripsi.trim(),
+    kepentingan: Number(data.kepentingan),
+    urgensi: Number(data.urgensi),
+    deadline: data.deadline,
+    durasi: Number(data.durasi) || 60,
+    kategori: data.kategori,
+    selesai: false,
+    createdAt: new Date().toISOString()
+  };
+  tasks.push(newTask);
+  saveTasks();
+  renderAll();
+  showToast('Kegiatan berhasil ditambahkan!', 'success');
+}
+
+function editTask(id, data) {
+  const index = tasks.findIndex(t => t.id === id);
+  if (index !== -1) {
+    tasks[index] = {
+      ...tasks[index],
+      nama: data.nama.trim(),
+      deskripsi: data.deskripsi.trim(),
+      kepentingan: Number(data.kepentingan),
+      urgensi: Number(data.urgensi),
+      deadline: data.deadline,
+      durasi: Number(data.durasi) || 60,
+      kategori: data.kategori
+    };
+    saveTasks();
+    renderAll();
+    showToast('Kegiatan berhasil diperbarui!', 'success');
+  }
+}
+
+function hapusTask(id) {
+  if (!confirm('Apakah Anda yakin ingin menghapus kegiatan ini?')) return;
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks();
+  renderAll();
+  showToast('Kegiatan berhasil dihapus.', 'info');
+}
+
+function toggleSelesai(id) {
+  const task = tasks.find(t => t.id === id);
+  if (task) {
+    task.selesai = !task.selesai;
+    saveTasks();
+    renderAll();
+    showToast(task.selesai ? 'Kegiatan diselesaikan! 🎉' : 'Kegiatan dibatalkan selesainya.', 'success');
+  }
+}
+
+// ==========================================
+// FUNGSI RENDERING UI
+// ==========================================
+function renderAll() {
+  updateStats();
+  renderDashboard();
+  renderTasksView();
+  renderAgenda();
+}
+
+// 1. Update Statistik Dashboard
+function updateStats() {
+  const total = tasks.length;
+  const active = tasks.filter(t => !t.selesai).length;
+  const done = tasks.filter(t => t.selesai).length;
+  const highPriority = tasks.filter(t => !t.selesai && hitungSkorTotal(t) >= 11).length;
+  
+  const progressPct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><span class="icon">📋</span><span class="label">Total Kegiatan</span><span class="value">${total}</span></div>
+    <div class="stat-card"><span class="icon">⏳</span><span class="label">Belum Selesai</span><span class="value blue">${active}</span></div>
+    <div class="stat-card"><span class="icon">✅</span><span class="label">Selesai</span><span class="value green">${done}</span></div>
+    <div class="stat-card"><span class="icon">🔥</span><span class="label">Prioritas Tinggi</span><span class="value red">${highPriority}</span></div>
+  `;
+
+  document.getElementById('progressPct').textContent = progressPct + '%';
+  document.getElementById('progressFill').style.width = progressPct + '%';
+}
+
+// 2. Render Dashboard (Prioritas hari ini, tenggat, list utama)
+function renderDashboard() {
+  const activeTasks = tasks.filter(t => !t.selesai);
+  const sortedActive = sortTasks(activeTasks, 'score');
+
+  // Prioritas Utama Hari Ini (Top 3)
+  const todayTasks = sortedActive.slice(0, 3);
+  document.getElementById('todayCount').textContent = `${todayTasks.length} kegiatan`;
+  const todayEl = document.getElementById('todayHighlight');
+  if (todayTasks.length === 0) {
+    todayEl.innerHTML = `<div class="mini-empty">Belum ada kegiatan prioritas hari ini.</div>`;
+  } else {
+    todayEl.innerHTML = todayTasks.map(t => `
+      <div class="highlight-card">
+        <div class="mini-item">
+          <div>
+            <div class="name">${escapeHtml(t.nama)}</div>
+            <div class="meta">Skor: ${hitungSkorTotal(t)} | ${formatDate(t.deadline)}</div>
+          </div>
+          <span class="tag ${getLabelPrioritas(hitungSkorTotal(t)).class}">${getLabelPrioritas(hitungSkorTotal(t)).label}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Tenggat Terdekat (Top 3)
+  const upcomingTasks = [...activeTasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline)).slice(0, 3);
+  document.getElementById('deadlineCount').textContent = `${upcomingTasks.length} kegiatan`;
+  const deadlineEl = document.getElementById('deadlineHighlight');
+  if (upcomingTasks.length === 0) {
+    deadlineEl.innerHTML = `<div class="mini-empty">Tidak ada tenggat waktu mendatang.</div>`;
+  } else {
+    deadlineEl.innerHTML = upcomingTasks.map(t => `
+      <div class="highlight-card">
+        <div class="mini-item">
+          <div>
+            <div class="name">${escapeHtml(t.nama)}</div>
+            <div class="meta">${formatDate(t.deadline)}</div>
+          </div>
+          ${isLate(t) ? '<span class="tag tag-late">Terlambat</span>' : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Daftar Kegiatan Utama di Dashboard
+  const dashList = sortedActive.slice(0, 5);
+  const dashEl = document.getElementById('dashboardTaskList');
+  if (dashList.length === 0) {
+    dashEl.innerHTML = `
+      <div class="empty">
+        <span class="emoji">🌟</span>
+        <h4>Semua Kegiatan Selesai atau Kosong!</h4>
+        <p>Tambahkan kegiatan baru untuk mulai menentukan prioritas.</p>
+        <button class="btn btn-primary" onclick="openModal()">➕ Tambah Kegiatan</button>
+      </div>`;
+  } else {
+    dashEl.innerHTML = dashList.map(t => createTaskCardHTML(t)).join('');
+  }
+}
+
+// 3. HTML Generator untuk Kartu Kegiatan
+function createTaskCardHTML(t) {
+  const skor = hitungSkorTotal(t);
+  const prioritas = getLabelPrioritas(skor);
+  const late = isLate(t);
+  
+  return `
+    <div class="task-card ${t.selesai ? 'done' : ''}">
+      <div class="task-check ${t.selesai ? 'checked' : ''}" onclick="toggleSelesai('${t.id}')" title="Tandai Selesai"></div>
+      
+      <div class="task-body">
+        <div class="task-name">${escapeHtml(t.nama)}</div>
+        ${t.deskripsi ? `<div class="task-desc">${escapeHtml(t.deskripsi)}</div>` : ''}
+        
+        <div class="task-meta">
+          <span class="tag ${prioritas.class}">Prioritas ${prioritas.label}</span>
+          <span class="tag tag-kategori">${t.kategori}</span>
+          ${late ? '<span class="tag tag-late">⚠️ TERLAMBAT</span>' : ''}
+          <span>⏰ ${formatDate(t.deadline)}</span>
+          <span>⏱️ ${t.durasi} menit</span>
+        </div>
+      </div>
+      
+      <div class="score-box" title="Kepentingan(${t.kepentingan})x2 + Urgensi(${t.urgensi}) + FaktorTenggat">
+        <span class="num">${skor}</span>
+        <span class="lbl">Skor</span>
+      </div>
+      
+      <div class="task-actions">
+        <button class="icon-btn" onclick="openModal('${t.id}')" title="Edit">✏️</button>
+        <button class="icon-btn del" onclick="hapusTask('${t.id}')" title="Hapus">🗑️</button>
+      </div>
+    </div>
+  `;
+}
+
+// 4. Render Halaman "Semua Kegiatan" (dengan Filter & Search)
+function renderTasksView() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const kat = document.getElementById('filterKategori').value;
+  const status = document.getElementById('filterStatus').value;
+  const prio = document.getElementById('filterPrioritas').value;
+  const sortBy = document.getElementById('sortBy').value;
+
+  let filtered = tasks.filter(t => {
+    const matchSearch = t.nama.toLowerCase().includes(search) || (t.deskripsi && t.deskripsi.toLowerCase().includes(search));
+    const matchKat = kat === 'all' || t.kategori === kat;
+    
+    let matchStatus = true;
+    if (status === 'active') matchStatus = !t.selesai;
+    else if (status === 'done') matchStatus = t.selesai;
+    else if (status === 'late') matchStatus = isLate(t);
+
+    let matchPrio = true;
+    if (prio !== 'all') {
+      const label = getLabelPrioritas(hitungSkorTotal(t)).label.toLowerCase();
+      matchPrio = label === prio;
+    }
+
+    return matchSearch && matchKat && matchStatus && matchPrio;
+  });
+
+  filtered = sortTasks(filtered, sortBy);
+
+  const activeTasks = filtered.filter(t => !t.selesai);
+  const doneTasks = filtered.filter(t => t.selesai);
+
+  document.getElementById('tasksCountBadge').textContent = `${filtered.length} kegiatan`;
+
+  const activeEl = document.getElementById('activeTaskList');
+  if (activeTasks.length === 0) {
+    activeEl.innerHTML = `<div class="mini-empty">Tidak ada kegiatan yang cocok dengan filter.</div>`;
+  } else {
+    activeEl.innerHTML = activeTasks.map(t => createTaskCardHTML(t)).join('');
+  }
+
+  const doneEl = document.getElementById('doneTaskList');
+  if (doneTasks.length === 0) {
+    doneEl.innerHTML = `<div class="mini-empty">Belum ada kegiatan yang diselesaikan.</div>`;
+  } else {
+    doneEl.innerHTML = doneTasks.map(t => createTaskCardHTML(t)).join('');
+  }
+}
+
+// 5. Render Agenda Sederhana
+function renderAgenda() {
+  const activeTasks = tasks.filter(t => !t.selesai);
+  const grouped = {};
+
+  activeTasks.forEach(t => {
+    const dateStr = new Date(t.deadline).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (!grouped[dateStr]) grouped[dateStr] = [];
+    grouped[dateStr].push(t);
+  });
+
+  const agendaEl = document.getElementById('agendaList');
+  const dates = Object.keys(grouped).sort((a,b) => new Date(a) - new Date(b));
+  
+  document.getElementById('agendaCount').textContent = `${dates.length} hari`;
+
+  if (dates.length === 0) {
+    agendaEl.innerHTML = `<div class="empty"><span class="emoji">📅</span><h4>Agenda Kosong</h4><p>Tidak ada kegiatan mendatang.</p></div>`;
+    return;
+  }
+
+  agendaEl.innerHTML = dates.map(date => `
+    <div style="margin-bottom: 20px;">
+      <h4 style="font-size:14px; color:var(--biru-tua); border-bottom:2px solid var(--biru-muda); padding-bottom:6px; margin-bottom:10px;">${date}</h4>
+      <div class="task-list">
+        ${grouped[date].map(t => createTaskCardHTML(t)).join('')}
+      </div>
+    </div>
+      `).join('');
+}
+// Utilitas keamanan HTML string
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/[&<>"']/g, function(m) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+  });
+}
+
+// ==========================================
+// EVENT LISTENERS & INTERAKSI UI
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  loadTasks();
+  renderAll();
+
+  // Navigasi Desktop
+  document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      switchView(e.currentTarget.dataset.view);
+    });
+  });
+
+  // Navigasi Mobile
+  document.querySelectorAll('.mnav-item[data-view]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.mnav-item').forEach(b => b.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      switchView(e.currentTarget.dataset.view);
+      closeSidebar();
+    });
+  });
+
+  // Buka Modal
+  document.getElementById('btnAddTop').addEventListener('click', () => openModal());
+  document.getElementById('btnSidebarAdd').addEventListener('click', () => openModal());
+  document.getElementById('mnavAdd').addEventListener('click', () => openModal());
+  document.getElementById('btnGoTasks').addEventListener('click', () => {
+    document.querySelector('[data-view="tasks"]').click();
+  });
+
+  // Tutup Modal
+  document.getElementById('btnBatal').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Submit Form
+  document.getElementById('taskForm').addEventListener('submit', handleFormSubmit);
+
+  // Filter & Search Event Listeners
+  ['searchInput', 'filterKategori', 'filterStatus', 'filterPrioritas', 'sortBy'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderTasksView);
+  });
+
+  // Reset Filter
+  document.getElementById('btnResetFilter').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterKategori').value = 'all';
+    document.getElementById('filterStatus').value = 'all';
+    document.getElementById('filterPrioritas').value = 'all';
+    document.getElementById('sortBy').value = 'score';
+    renderTasksView();
+    showToast('Filter direset ke awal.', 'info');
+  });
+
+  // Hapus Semua Data
+  document.getElementById('btnHapusSemua').addEventListener('click', () => {
+    if (confirm('⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus SEMUA data kegiatan? Tindakan ini tidak dapat dibatalkan.')) {
+      tasks = [];
+      saveTasks();
+      renderAll();
+      showToast('Semua data berhasil dihapus.', 'error');
+    }
+  });
+
+  // Sidebar Mobile Toggle
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  
+  document.getElementById('hamburger').addEventListener('click', () => {
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+  });
+
+  backdrop.addEventListener('click', closeSidebar);
+});
+
+function switchView(viewName) {
+  document.querySelectorAll('main > section').forEach(sec => sec.style.display = 'none');
+  document.getElementById(`view-${viewName}`).style.display = 'block';
+  
+  const titles = {
+    dashboard: { t: 'Dashboard Prioritas', s: 'Tentukan kegiatan terpenting hari ini.' },
+    tasks: { t: 'Kelola Semua Kegiatan', s: 'Cari, filter, dan urutkan daftar kegiatan Anda.' },
+    agenda: { t: 'Agenda Kegiatan', s: 'Lihat jadwal kegiatan mendatang.' }
+  };
+  document.getElementById('pageTitle').textContent = titles[viewName].t;
+  document.getElementById('pageSub').textContent = titles[viewName].s;
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+
+// ==========================================
+// LOGIKA FORM MODAL (TAMBAH / EDIT)
+// ==========================================
+function openModal(id = null) {
+  editMode = !!id;
+  const modal = document.getElementById('modalOverlay');
+  const form = document.getElementById('taskForm');
+  form.reset();
+  
+  document.getElementById('errNama').textContent = '';
+  document.getElementById('errDeadline').textContent = '';
+  
+  if (editMode) {
+    document.getElementById('modalTitle').textContent = 'Edit Kegiatan';
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      document.getElementById('taskId').value = task.id;
+      document.getElementById('inputNama').value = task.nama;
+      document.getElementById('inputDeskripsi').value = task.deskripsi || '';
+      document.getElementById('inputKepentingan').value = task.kepentingan;
+      document.getElementById('inputUrgensi').value = task.urgensi;
+      document.getElementById('inputDeadline').value = task.deadline.substring(0, 16); // Format untuk datetime-local
+      document.getElementById('inputDurasi').value = task.durasi;
+      document.getElementById('inputKategori').value = task.kategori;
+    }
+  } else {
+    document.getElementById('modalTitle').textContent = 'Tambah Kegiatan Baru';
+    document.getElementById('taskId').value = '';
+    
+    // Set default deadline ke 1 hari dari sekarang
+    const tomorrow = new Date(Date.now() + 86400000);
+    tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
+    document.getElementById('inputDeadline').value = tomorrow.toISOString().slice(0, 16);
+  }
+
+  modal.classList.add('open');
+  closeSidebar();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function handleFormSubmit(e) {
+  e.preventDefault();
+  
+  const id = document.getElementById('taskId').value;
+  const nama = document.getElementById('inputNama').value.trim();
+  const deadline = document.getElementById('inputDeadline').value;
+  
+  let isValid = true;
+
+  // Validasi
+  if (!nama) {
+    document.getElementById('errNama').textContent = 'Nama kegiatan tidak boleh kosong!';
+    isValid = false;
+  } else {
+    document.getElementById('errNama').textContent = '';
+  }
+
+  if (!deadline) {
+    document.getElementById('errDeadline').textContent = 'Tenggat waktu harus diisi!';
+    isValid = false;
+  } else {
+    document.getElementById('errDeadline').textContent = '';
+  }
+
+  if (!isValid) return;
+
+  const data = {
+    nama: nama,
+    deskripsi: document.getElementById('inputDeskripsi').value,
+    kepentingan: document.getElementById('inputKepentingan').value,
+    urgensi: document.getElementById('inputUrgensi').value,
+    deadline: new Date(deadline).toISOString(), // Simpan sebagai ISO string standar
+    durasi: document.getElementById('inputDurasi').value,
+    kategori: document.getElementById('inputKategori').value
+  };
+
+  if (editMode) {
+    editTask(id, data);
+  } else {
+    tambahTask(data);
+  }
+
+  closeModal();
+}
+</script>
+</body>
+</html>
